@@ -1,11 +1,6 @@
 /* globals describe, it */
 const assert = require('assert');
-
-function lSystem (input, rules) {
-  const chars = input.split('');
-
-  return chars.map(char => rules[char]).join('');
-}
+const lSystem = require('../src/l-system');
 
 describe('L-System', () => {
   describe('algae', () => {
@@ -28,6 +23,28 @@ describe('L-System', () => {
 
         return lSystem(acc, rules);
       }, 'A');
+    });
+  });
+
+  describe('pythagoras tree', () => {
+    const rules = {
+      '1': '11',
+      '0': '1[0]0'
+    };
+
+    it('rules', () => {
+      const expectedOutput = [
+        '0',
+        '1[0]0',
+        '11[1[0]0]1[0]0',
+        '1111[11[1[0]0]1[0]0]11[1[0]0]1[0]0'
+      ];
+
+      expectedOutput.reduce((acc, expected) => {
+        assert.equal(acc, expected);
+
+        return lSystem(acc, rules);
+      }, '0');
     });
   });
 });
