@@ -1,5 +1,6 @@
-import {h, div, pre, button} from '@cycle/dom';
+import {h, label, input, select, option, div, pre, button} from '@cycle/dom';
 import xs from 'xstream';
+import Collection from '@cycle/collection';
 
 const lSystem = require('./l-system');
 import Vector from './vector';
@@ -13,6 +14,173 @@ const reducers = {
     };
   }
 };
+
+const possibleInstructions = [
+  {
+    name: 'turn right',
+    args: [
+      { name: 'angle', type: 'number', defaultValue: 45 }
+    ]
+  },
+  {
+    name: 'turn left',
+    args: [
+      { name: 'angle', type: 'number', defaultValue: 45 }
+    ]
+  },
+  {
+    name: 'go forward',
+    args: [
+      { name: 'distance', type: 'number', defaultValue: 15 }
+    ]
+  },
+  {
+    name: 'load',
+    args: []
+  },
+  {
+    name: 'save',
+    args: []
+  }
+];
+
+function renderInstructionOption (instruction, index) {
+  return (
+    option(instruction.name)
+  );
+}
+
+function renderInstructionArgs (instruction) {
+  return (
+    div(
+      instruction.args.map(arg => {
+        return (
+          div([
+            label(arg.name),
+            input({attrs: { value: arg.defaultValue }})
+          ])
+        );
+      })
+    )
+  );
+}
+
+function Instructions ({DOM}) {
+  function view (instructionsDOM) {
+    return (
+      div([
+        div('.instructions', instructionsDOM),
+        button('.add', 'Add instruction')
+      ])
+    );
+  }
+
+  const add$ = DOM
+    .select('.add')
+    .events('click');
+
+  const instructions$ = Collection(Instruction, {DOM}, add$);
+
+  const instructionsDOM$ = Collection.pluck(
+    instructions$,
+    instruction => instruction.DOM
+  );
+
+  return {
+    DOM: instructionsDOM$.map(view)
+  };
+}
+
+function Instruction ({DOM}) {
+  function view (instructionsDOM) {
+    return (
+      div('.instructions-container', [
+        div([
+          label('Instruction character:'),
+          input('.instruction-character')
+        ]),
+        div('.instruction-parts', instructionsDOM),
+        button('.add-instruction', 'Add instruction')
+      ])
+    );
+  }
+
+  const add$ = DOM
+    .select('.add-instruction')
+    .events('click')
+    .map(ev => ({}));
+
+  const instructionParts$ = Collection(
+    InstructionPart,
+    {DOM},
+    add$,
+    instructionPart => instructionPart.remove$
+  );
+
+  const instructionPartsDOM$ = Collection.pluck(
+    instructionParts$,
+    (instructionPart) => instructionPart.DOM
+  );
+
+  return {
+    DOM: instructionPartsDOM$.map(view)
+  };
+}
+
+function InstructionPart ({DOM}) {
+  const initialState = {
+    selectedInstruction: possibleInstructions[0]
+  };
+
+  function view (state) {
+    return (
+      div('.instruction', [
+        select('.instruction-name', possibleInstructions.map(renderInstructionOption)),
+        renderInstructionArgs(state.selectedInstruction),
+        button('.remove', 'x')
+      ])
+    );
+  }
+
+  const selectInstruction$ = DOM
+    .select('.instruction-name')
+    .events('change')
+    .map(ev => ({type: 'SELECT_INSTRUCTION', payload: ev.target.selectedIndex}));
+
+  const remove$ = DOM
+    .select('.remove')
+    .events('click');
+
+  const action$ = xs.merge(
+    selectInstruction$
+  );
+
+  const reducers = {
+    SELECT_INSTRUCTION (state, instructionIndex) {
+      return {
+        ...state,
+
+        selectedInstruction: possibleInstructions[instructionIndex]
+      };
+    }
+  };
+
+  const state$ = action$.fold((state, action) => {
+    const reducer = reducers[action.type];
+
+    if (!reducer) {
+      throw new Error(`Implement a reducer for action type "${action.type}"`);
+    }
+
+    return reducer(state, action.payload);
+  }, initialState);
+
+  return {
+    DOM: state$.map(view),
+
+    remove$
+  };
+}
 
 function App (sources) {
   const initialState = {
@@ -44,14 +212,18 @@ function App (sources) {
     return reducer(state, action.payload);
   }, initialState);
 
+  const instructions = Instructions(sources);
+
   return {
-    DOM: state$.map(view)
+    DOM: xs.combine(state$, instructions.DOM).map(view)
   };
 }
 
-function view (state) {
+function view ([state, instructionsDOM]) {
   return div([
     button('.go', 'GO!'),
+
+    instructionsDOM,
 
     debug(state),
 

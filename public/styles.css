@@ -10,3 +10,24 @@ html, body {
 svg {
   border: 1px solid red;
 }
+
+.instruction {
+  margin: 1em;
+}
+
+.instructions {
+  display: flex;
+  flex-direction: column;
+}
+
+.instruction-parts {
+  display: flex;
+}
+
+.instructions-container {
+  display: flex;
+}
+
+.instruction-character {
+  width: 1.5em;
+}

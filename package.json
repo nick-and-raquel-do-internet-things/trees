@@ -27,6 +27,7 @@
     "uglifyify": "^3.0.3"
   },
   "dependencies": {
+    "@cycle/collection": "^0.4.0",
     "@cycle/dom": "^13.0.0",
     "@cycle/xstream-run": "^3.1.0",
     "xstream": "^7.0.0"
