@@ -114,20 +114,18 @@ const turtleReducers = {
   },
 
   TURN_LEFT (turtleState, degrees) {
-    console.log('left', degrees);
     return {
       ...turtleState,
 
-      direction: turtleState.direction + degrees
+      direction: turtleState.direction + parseInt(degrees, 10)
     };
   },
 
   TURN_RIGHT (turtleState, degrees) {
-    console.log('right', degrees);
     return {
       ...turtleState,
 
-      direction: turtleState.direction - degrees
+      direction: turtleState.direction - parseInt(degrees, 10)
     };
   },
 
