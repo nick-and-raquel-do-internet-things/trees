@@ -19,19 +19,19 @@ const possibleInstructions = [
   {
     name: 'turn right',
     args: [
-      { name: 'angle', type: 'number', defaultValue: 45 }
+      { name: 'angle', type: 'number', defaultValue: 45, value: 45 }
     ]
   },
   {
     name: 'turn left',
     args: [
-      { name: 'angle', type: 'number', defaultValue: 45 }
+      { name: 'angle', type: 'number', defaultValue: 45, value: 45 }
     ]
   },
   {
     name: 'go forward',
     args: [
-      { name: 'distance', type: 'number', defaultValue: 15 }
+      { name: 'distance', type: 'number', defaultValue: 15, value: 15 }
     ]
   },
   {
@@ -53,14 +53,12 @@ function renderInstructionOption (instruction, index) {
 function renderInstructionArgs (instruction) {
   return (
     div(
-      instruction.args.map(arg => {
-        return (
-          div([
-            label(arg.name),
-            input({attrs: { value: arg.defaultValue }})
-          ])
-        );
-      })
+      instruction.args.map((arg, index) =>
+        div([
+          label(arg.name),
+          input({attrs: { value: arg.defaultValue, 'data-index': index }})
+        ])
+      )
     )
   );
 }
@@ -79,15 +77,30 @@ function Instructions ({DOM}) {
     .select('.add')
     .events('click');
 
-  const instructions$ = Collection(Instruction, {DOM}, add$);
+  const instructions$ = Collection(
+    Instruction,
+    {DOM},
+    add$,
+    instruction => instruction.remove$
+  );
 
   const instructionsDOM$ = Collection.pluck(
     instructions$,
     instruction => instruction.DOM
   );
 
+  const state$ = Collection.pluck(
+    instructions$,
+    instructions => xs.combine(
+      instructions.instructionCharacter$,
+      instructions.selectedInstructions$
+    ).map(([character, instructions]) => ({character, instructions}))
+  );
+
   return {
-    DOM: instructionsDOM$.map(view)
+    DOM: instructionsDOM$.map(view),
+
+    state$
   };
 }
 
@@ -96,11 +109,12 @@ function Instruction ({DOM}) {
     return (
       div('.instructions-container', [
         div([
+          button('.remove', 'x'),
           label('Instruction character:'),
           input('.instruction-character')
         ]),
         div('.instruction-parts', instructionsDOM),
-        button('.add-instruction', 'Add instruction')
+        button('.add-instruction', 'Add instruction'),
       ])
     );
   }
@@ -109,6 +123,16 @@ function Instruction ({DOM}) {
     .select('.add-instruction')
     .events('click')
     .map(ev => ({}));
+
+  const remove$ = DOM
+    .select('.remove')
+    .events('click');
+
+  const instructionCharacter$ = DOM
+    .select('.instruction-character')
+    .events('change')
+    .map(ev => ev.target.value)
+    .startWith('');
 
   const instructionParts$ = Collection(
     InstructionPart,
@@ -122,8 +146,19 @@ function Instruction ({DOM}) {
     (instructionPart) => instructionPart.DOM
   );
 
+  const selectedInstructions$ = Collection.pluck(
+    instructionParts$,
+    instructionPart => instructionPart.selectedInstruction$
+  );
+
   return {
-    DOM: instructionPartsDOM$.map(view)
+    DOM: instructionPartsDOM$.map(view),
+
+    selectedInstructions$,
+
+    instructionCharacter$,
+
+    remove$
   };
 }
 
@@ -147,12 +182,18 @@ function InstructionPart ({DOM}) {
     .events('change')
     .map(ev => ({type: 'SELECT_INSTRUCTION', payload: ev.target.selectedIndex}));
 
+  const changeArgValue$ = DOM
+  .select('input')
+  .events('input')
+  .map(ev => ({type: 'CHANGE_ARG', payload: {index: ev.target.dataset.index, value: ev.target.value}}));
+
   const remove$ = DOM
     .select('.remove')
     .events('click');
 
   const action$ = xs.merge(
-    selectInstruction$
+    selectInstruction$,
+    changeArgValue$
   );
 
   const reducers = {
@@ -161,6 +202,24 @@ function InstructionPart ({DOM}) {
         ...state,
 
         selectedInstruction: possibleInstructions[instructionIndex]
+      };
+    },
+
+    CHANGE_ARG (state, payload) {
+      const selectedInstruction = state.selectedInstruction;
+      const args = selectedInstruction.args.slice();
+      const selectedArg = args[payload.index];
+
+      args.splice(payload.index, 1, {...selectedArg, value: payload.value});
+
+      return {
+        ...state,
+
+        selectedInstruction: {
+          ...selectedInstruction,
+
+          args
+        }
       };
     }
   };
@@ -175,8 +234,12 @@ function InstructionPart ({DOM}) {
     return reducer(state, action.payload);
   }, initialState);
 
+  const selectedInstruction$ = state$.map(state => state.selectedInstruction);
+
   return {
     DOM: state$.map(view),
+
+    selectedInstruction$,
 
     remove$
   };
