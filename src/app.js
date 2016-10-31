@@ -1,5 +1,6 @@
 import {h, div, pre, button} from '@cycle/dom';
 import xs from 'xstream';
+import SvgPanAndZoom from 'cycle-svg-pan-and-zoom';
 
 const lSystem = require('./l-system');
 import Vector from './vector';
@@ -15,7 +16,7 @@ const reducers = {
   }
 };
 
-function App (sources) {
+function App ({DOM}) {
   const initialState = {
     system: '0',
 
@@ -25,8 +26,7 @@ function App (sources) {
     }
   };
 
-  const goAction$ = sources
-    .DOM
+  const goAction$ = DOM
     .select('.go')
     .events('click')
     .mapTo({type: 'GO'});
@@ -45,14 +45,18 @@ function App (sources) {
     return reducer(state, action.payload);
   }, initialState);
 
-  const instructions = Instructions(sources);
+  const instructions = Instructions({DOM});
+
+  const children$ = xs.combine(state$, instructions.state$).map(renderSystem);
+
+  const svg = SvgPanAndZoom({DOM, children$, attrs$: xs.of({'width': innerWidth, 'height': innerHeight})});
 
   return {
-    DOM: xs.combine(state$, instructions.DOM, instructions.state$).map(view)
+    DOM: xs.combine(state$, instructions.DOM, svg.DOM).map(view)
   };
 }
 
-function view ([state, instructionsDOM, instructionsState]) {
+function view ([state, instructionsDOM, svg]) {
   return div([
     button('.go', 'GO!'),
 
@@ -60,7 +64,7 @@ function view ([state, instructionsDOM, instructionsState]) {
 
     debug(state),
 
-    renderSystem(state, instructionsState)
+    svg
   ]);
 }
 
@@ -176,11 +180,11 @@ function turtleItUp (instructionsState, turtleState, character, index, character
   return turtleState;
 }
 
-function renderSystem (state, instructionsState) {
+function renderSystem ([state, instructionsState]) {
   const turtleState = {
     position: Vector({
       x: innerWidth / 2,
-      y: 600
+      y: 300
     }),
 
     direction: 270,
@@ -191,11 +195,7 @@ function renderSystem (state, instructionsState) {
     lines: []
   };
 
-  return (
-    h('svg', {attrs: {width: innerWidth, height: '100vh'}}, [
-      ...state.system.split('').reduce((acc, character, index, characters) => turtleItUp(instructionsState, acc, character, index, characters), turtleState).lines
-    ])
-  );
+  return state.system.split('').reduce((acc, character, index, characters) => turtleItUp(instructionsState, acc, character, index, characters), turtleState).lines;
 }
 
 function debug (val) {
