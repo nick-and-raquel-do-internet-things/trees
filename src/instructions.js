@@ -4,7 +4,7 @@ import Collection from '@cycle/collection';
 
 import Instruction from './instruction';
 
-function Instructions ({DOM}) {
+function Instructions ({DOM, props$}) {
   function view (instructionsDOM) {
     return (
       div([
@@ -18,10 +18,19 @@ function Instructions ({DOM}) {
     .select('.add')
     .events('click');
 
+  const instructionsFromProps$ = props$
+    .map(props => xs.fromArray(props))
+    .flatten()
+
+  const newInstruction$ = xs.merge(
+    add$,
+    instructionsFromProps$
+  );
+
   const instructions$ = Collection(
     Instruction,
-    {DOM},
-    add$,
+    {DOM, character: '', instructions: []},
+    newInstruction$,
     instruction => instruction.remove$
   );
 
@@ -49,7 +58,8 @@ function Instructions ({DOM}) {
   return {
     DOM: instructionsDOM$.map(view),
 
-    state$
+    state$,
+    stateArray$
   };
 }
 

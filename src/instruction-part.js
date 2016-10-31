@@ -92,7 +92,7 @@ const reducers = {
   }
 };
 
-function InstructionPart ({DOM}) {
+function InstructionPart ({DOM, ...sources}) {
   const initialState = {
     selectedInstruction: possibleInstructions[0]
   };
