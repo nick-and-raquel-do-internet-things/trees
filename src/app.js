@@ -214,4 +214,19 @@ function debug (val) {
   return pre(JSON.stringify(val, null, 2));
 }
 
-export default Controls;
+export default function (sources) {
+  const controls = Controls(sources);
+
+  function view ([controlsDOM, controlsState]) {
+    return (
+      div([
+        controlsDOM,
+        debug(controlsState)
+      ])
+    );
+  }
+
+  return {
+    DOM: xs.combine(controls.DOM, controls.state$).map(view)
+  }
+}

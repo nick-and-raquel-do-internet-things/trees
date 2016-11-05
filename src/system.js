@@ -12,18 +12,20 @@ function System ({DOM}) {
     );
   }
 
-  const system$ = DOM
+  const axiom$ = DOM
     .select('.system')
     .events('input')
     .map(ev => ev.target.value)
     .startWith('');
 
-  const characters$ = system$.map(uniq);
+  const characters$ = axiom$.map(uniq);
 
   return {
-    DOM: system$.map(view),
+    DOM: axiom$.map(view),
 
-    characters$
+    characters$,
+
+    axiom$
   };
 }
 

@@ -18,8 +18,13 @@ function Controls ({DOM}) {
   const system = System({DOM});
   const rules = Rules({DOM, characters$: system.characters$});
 
+  const state$ = xs.combine(system.axiom$, rules.rules$)
+    .map(([axiom, rules]) => ({axiom, rules}));
+
   return {
-    DOM: xs.combine(system.DOM, rules.DOM, system.characters$).map(view)
+    DOM: xs.combine(system.DOM, rules.DOM, system.characters$).map(view),
+
+    state$
   };
 }
 

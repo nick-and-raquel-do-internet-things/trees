@@ -31,7 +31,7 @@ function Rules ({DOM, characters$}) {
 
   const ruleCharactersProxy$ = xs.create();
 
-  const newCharacter$ = xs.merge(characters$, ruleCharactersProxy$.debug('wow'))
+  const newCharacter$ = xs.merge(characters$, ruleCharactersProxy$)
     .fold(diffCharacters, initialNewCharacterState)
     .map(state => xs.fromArray(state.diff))
     .flatten();
@@ -67,9 +67,25 @@ function Rules ({DOM, characters$}) {
 
   ruleCharactersProxy$.imitate(ruleCharacters$);
 
+  const rulesStuff$ = Collection.pluck(
+    rules$,
+    rule => xs.combine(rule.transformationCharacter$, rule.transformation$)
+  );
+
+  const rulesObject$ = rulesStuff$
+    .map(rulesStuff => rulesStuff.reduce(arrayIntoObject, {}));
+
   return {
-    DOM: rulesDOM$.map(view)
+    DOM: rulesDOM$.map(view),
+
+    rules$: rulesObject$
   };
+}
+
+function arrayIntoObject (object, [key, value]) {
+  object[key] = value;
+
+  return object;
 }
 
 export default isolate(Rules);

@@ -7,7 +7,7 @@ function Rule ({DOM, character$}) {
   function view (character) {
     return (
       div('.rule', [
-        input('.tranformation-character', {attrs: {value: character}}),
+        input('.transformation-character', {attrs: {value: character}}),
         span('  ->  '),
         input('.transformation-input', {attrs: {value: character}}),
         button('.remove', 'x') // TODO - use unicode times value
@@ -29,12 +29,16 @@ function Rule ({DOM, character$}) {
     .events('input')
     .map(ev => ev.target.value);
 
-  const transformation$ = xs.merge(rule$, character$);
+  const transformation$ = xs.merge(rule$, character$).remember();
 
   const transformationUniqueCharacters$ = transformation$.map(uniq);
 
   return {
     DOM: character$.map(view),
+
+    transformationCharacter$: xs.merge(transformationCharacter$, character$).remember(),
+
+    transformation$,
 
     remove$,
 
