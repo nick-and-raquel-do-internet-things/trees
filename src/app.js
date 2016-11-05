@@ -14,6 +14,16 @@ const reducers = {
 
       system: lSystem(state.system, state.rules)
     };
+  },
+
+  UPDATE_STATE_FROM_CONTROLS (state, payload) {
+    return {
+      ...state,
+
+      system: payload.axiom,
+
+      rules: payload.rules
+    };
   }
 };
 
@@ -21,19 +31,25 @@ function App ({DOM, Location}) {
   const initialState = {
     system: '0',
 
-    rules: [
-     {character: '1', transformation: '11'},
-     {character: '0', transformation: '1[0]0'}
-    ]
+    rules: {
+    }
   };
+
+  const controls = Controls({DOM});
 
   const goAction$ = DOM
     .select('.go')
     .events('click')
     .mapTo({type: 'GO'});
 
+  const updateStateFromControls$ = controls
+    .state$
+    .map(state => ({type: 'UPDATE_STATE_FROM_CONTROLS', payload: state}));
+
   const action$ = xs.merge(
-    goAction$
+    goAction$,
+
+    updateStateFromControls$
   );
 
   const state$ = action$.fold((state, action) => {
@@ -56,23 +72,24 @@ function App ({DOM, Location}) {
 
   const svg = SvgPanAndZoom({DOM, children$, attrs$: xs.of({'width': innerWidth, 'height': innerHeight})});
 
-  const stateForUrl$ = xs.combine(state$, instructions.stateArray$)
-    .map(([state, instructionsState]) => ({state, instructionsState}));
+  const stateForUrl$ = instructions.stateArray$
+    .map(instructionsState => ({instructionsState}));
 
   return {
-    DOM: xs.combine(state$, instructions.DOM, svg.DOM).map(view),
+    DOM: xs.combine(state$, instructions.DOM, svg.DOM, controls.DOM).map(view),
+
     Location: stateForUrl$
   };
 }
 
-function view ([state, instructionsDOM, svg]) {
+function view ([state, instructionsDOM, svg, controlsDOM]) {
   return div([
-    controls.DOM, // TODO -make this work
+    controlsDOM,
     instructionsDOM,
 
     button('.go', 'GO!'),
 
-    // TODO - renable svg
+    svg
   ]);
 }
 
@@ -214,19 +231,4 @@ function debug (val) {
   return pre(JSON.stringify(val, null, 2));
 }
 
-export default function (sources) {
-  const controls = Controls(sources);
-
-  function view ([controlsDOM, controlsState]) {
-    return (
-      div([
-        controlsDOM,
-        debug(controlsState)
-      ])
-    );
-  }
-
-  return {
-    DOM: xs.combine(controls.DOM, controls.state$).map(view)
-  }
-}
+export default App;
