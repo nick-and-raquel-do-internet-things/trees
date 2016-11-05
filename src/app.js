@@ -16,7 +16,7 @@ const reducers = {
   }
 };
 
-function App ({DOM}) {
+function App ({DOM, Location}) {
   const initialState = {
     system: '0',
 
@@ -45,26 +45,34 @@ function App ({DOM}) {
     return reducer(state, action.payload);
   }, initialState);
 
-  const instructions = Instructions({DOM});
+  const instructionsProps$ = Location.map(location => location.instructionsState);
 
-  const children$ = xs.combine(state$, instructions.state$).map(renderSystem);
+  const instructions = Instructions({DOM, props$: instructionsProps$});
+
+  const allTheState$ = xs.combine(state$, instructions.state$);
+
+  const children$ = allTheState$.map(renderSystem);
 
   const svg = SvgPanAndZoom({DOM, children$, attrs$: xs.of({'width': innerWidth, 'height': innerHeight})});
 
+  const stateForUrl$ = xs.combine(state$, instructions.stateArray$)
+    .map(([state, instructionsState]) => ({state, instructionsState}));
+
   return {
-    DOM: xs.combine(state$, instructions.DOM, svg.DOM).map(view)
+    DOM: xs.combine(state$, instructions.DOM, svg.DOM).map(view),
+    Location: stateForUrl$
   };
 }
 
 function view ([state, instructionsDOM, svg]) {
   return div([
-    button('.go', 'GO!'),
-
     instructionsDOM,
 
-    debug(state),
+    button('.go', 'GO!'),
 
-    svg
+    svg,
+
+    debug(state)
   ]);
 }
 
@@ -147,6 +155,10 @@ const turtleReducers = {
 
   LOAD (turtleState) {
     const poppedPosition = turtleState.positions[turtleState.positions.length - 1];
+
+    if (!poppedPosition) {
+      return turtleState;
+    }
 
     return {
       ...turtleState,

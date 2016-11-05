@@ -35,9 +35,11 @@ const possibleInstructions = [
   }
 ];
 
-function renderInstructionOption (instruction, index) {
+function renderInstructionOption (state, instruction, index) {
+  const selected = state.selectedInstruction.type === instruction.type;
+
   return (
-    option(instruction.name)
+    option({attrs: {selected}}, instruction.name)
   );
 }
 
@@ -47,7 +49,7 @@ function renderInstructionArgs (instruction) {
       instruction.args.map((arg, index) =>
         div([
           label(arg.name),
-          input({attrs: { value: arg.defaultValue, 'data-index': index }})
+          input({attrs: { value: arg.value, 'data-index': index }})
         ])
       )
     )
@@ -57,7 +59,11 @@ function renderInstructionArgs (instruction) {
 function view (state) {
   return (
     div('.instruction', [
-      select('.instruction-name', possibleInstructions.map(renderInstructionOption)),
+      select(
+        '.instruction-name',
+        possibleInstructions.map((instruction, index) => renderInstructionOption(state, instruction, index))
+      ),
+
       renderInstructionArgs(state.selectedInstruction),
       button('.remove', 'x')
     ])
@@ -92,9 +98,19 @@ const reducers = {
   }
 };
 
-function InstructionPart ({DOM}) {
+function InstructionPart ({DOM, ...props}) {
+  const instructionFromProps = possibleInstructions.find(instruction => instruction.type === props.type);
+
+  let selectedInstruction;
+
+  if (instructionFromProps) {
+    selectedInstruction = {...instructionFromProps, args: props.args};
+  } else {
+    selectedInstruction = possibleInstructions[0];
+  }
+
   const initialState = {
-    selectedInstruction: possibleInstructions[0]
+    selectedInstruction
   };
 
   const selectInstruction$ = DOM
