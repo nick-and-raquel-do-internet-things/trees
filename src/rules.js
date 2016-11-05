@@ -1,14 +1,18 @@
+import Collection from '@cycle/collection';
 import {div, button} from '@cycle/dom';
 import isolate from '@cycle/isolate';
+
 import difference from 'lodash/difference';
 import union from 'lodash/union';
 import flatten from 'lodash/flatten';
+import keyBy from 'lodash/keyBy';
+
 import xs from 'xstream';
-import Collection from '@cycle/collection';
+import combineObj from 'xs-combine-obj';
 
 import Rule from './rule';
 
-function Rules ({DOM, characters$}) {
+function Rules ({DOM, characters$, props$}) {
   function view (rulesDOM) {
     return (
       div('.rules', [
@@ -42,10 +46,13 @@ function Rules ({DOM, characters$}) {
     .map(ev => ({character$: xs.of('')}));
 
   const newRule$ = newCharacter$.map(character => ({character$: xs.of(character)}));
+  const rulesFromLocation$ = props$.map(xs.fromArray).flatten()
+    .map(({character, transformation}) => ({character$: xs.of(character), transformation$: xs.of(transformation)}));
 
   const addRule$ = xs.merge(
     addRuleFromButton$,
-    newRule$
+    newRule$,
+    rulesFromLocation$
   );
 
   const rules$ = Collection(
@@ -67,27 +74,22 @@ function Rules ({DOM, characters$}) {
 
   ruleCharactersProxy$.imitate(ruleCharacters$);
 
-  const rulesStuff$ = Collection.pluck(
+  const rulesArray$ = Collection.pluck(
     rules$,
-    rule => xs.combine(rule.transformationCharacter$, rule.transformation$)
+    rule => combineObj({character$: rule.transformationCharacter$, transformation$: rule.transformation$})
   );
 
-  const rulesObject$ = rulesStuff$
-    .map(rulesStuff => rulesStuff.reduce(arrayIntoObject, {}));
+  const rulesObject$ = rulesArray$.map(rulesArray => keyBy(rulesArray, 'character'));
 
   return {
     DOM: rulesDOM$.map(view),
 
     rules$: rulesObject$,
 
+    rulesArray$,
+
     newCharacter$
   };
-}
-
-function arrayIntoObject (object, [key, value]) {
-  object[key] = value;
-
-  return object;
 }
 
 export default isolate(Rules);

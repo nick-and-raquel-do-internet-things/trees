@@ -34,6 +34,7 @@
     "cycle-svg-pan-and-zoom": "^0.1.2",
     "lodash": "^4.16.6",
     "urlencode": "^1.1.0",
+    "xs-combine-obj": "^1.1.1",
     "xstream": "^7.0.0"
   },
   "scripts": {

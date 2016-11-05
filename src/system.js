@@ -1,8 +1,9 @@
 import {div, label, input} from '@cycle/dom';
 import isolate from '@cycle/isolate';
 import uniq from 'lodash/uniq';
+import xs from 'xstream';
 
-function System ({DOM}) {
+function System ({DOM, props$}) {
   function view (system) {
     return (
       div([
@@ -12,11 +13,12 @@ function System ({DOM}) {
     );
   }
 
-  const axiom$ = DOM
+  const axiomInput$ = DOM
     .select('.system')
     .events('input')
-    .map(ev => ev.target.value)
-    .startWith('');
+    .map(ev => ev.target.value);
+
+  const axiom$ = xs.merge(props$, axiomInput$).startWith('');
 
   const characters$ = axiom$.map(uniq);
 

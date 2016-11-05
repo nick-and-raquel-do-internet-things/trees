@@ -21,6 +21,7 @@ const reducers = {
       ...state,
 
       system: payload.axiom,
+      axiom: payload.axiom,
 
       rules: payload.rules
     };
@@ -29,13 +30,16 @@ const reducers = {
 
 function App ({DOM, Location}) {
   const initialState = {
-    system: '0',
+    system: '',
+    axiom: '',
 
     rules: {
     }
   };
 
-  const controls = Controls({DOM});
+  const controlsProps$ = Location.map(location => location.controlsState);
+
+  const controls = Controls({DOM, props$: controlsProps$});
 
   const goAction$ = DOM
     .select('.go')
@@ -72,8 +76,8 @@ function App ({DOM, Location}) {
 
   const svg = SvgPanAndZoom({DOM, children$, attrs$: xs.of({'width': innerWidth, 'height': innerHeight})});
 
-  const stateForUrl$ = instructions.stateArray$
-    .map(instructionsState => ({instructionsState}));
+  const stateForUrl$ = xs.combine(controls.stateForLocation$, instructions.stateArray$)
+    .map(([controlsState, instructionsState]) => ({controlsState, instructionsState}));
 
   return {
     DOM: xs.combine(state$, instructions.DOM, svg.DOM, controls.DOM).map(view),
@@ -232,3 +236,7 @@ function debug (val) {
 }
 
 export default App;
+
+
+// we want to store the axiom and the rules in the location state
+// so that when we reload the page, the axiom and rules remain
