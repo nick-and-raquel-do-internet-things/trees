@@ -64,7 +64,7 @@ function App ({DOM, Location}) {
 
   const instructionsProps$ = Location.map(location => location.instructionsState);
 
-  const instructions = Instructions({DOM, props$: instructionsProps$});
+  const instructions = Instructions({DOM, props$: instructionsProps$, newCharacter$: controls.newCharacter$});
 
   const allTheState$ = xs.combine(state$, instructions.state$);
 

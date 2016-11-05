@@ -78,7 +78,9 @@ function Rules ({DOM, characters$}) {
   return {
     DOM: rulesDOM$.map(view),
 
-    rules$: rulesObject$
+    rules$: rulesObject$,
+
+    newCharacter$
   };
 }
 

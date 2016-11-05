@@ -24,7 +24,9 @@ function Controls ({DOM}) {
   return {
     DOM: xs.combine(system.DOM, rules.DOM, system.characters$).map(view),
 
-    state$
+    state$,
+
+    newCharacter$: rules.newCharacter$
   };
 }
 
