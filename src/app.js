@@ -1,15 +1,11 @@
-import {h, div, pre, button, label, input} from '@cycle/dom';
-import isolate from '@cycle/isolate';
+import {h, div, pre, button} from '@cycle/dom';
 import xs from 'xstream';
 import SvgPanAndZoom from 'cycle-svg-pan-and-zoom';
-import uniq from 'lodash/uniq';
-import flatten from 'lodash/flatten';
-import difference from 'lodash/difference';
-import Collection from '@cycle/collection';
 
 const lSystem = require('./l-system');
 import Vector from './vector';
 import Instructions from './instructions';
+import Controls from './controls';
 
 const reducers = {
   GO (state, payload) {
@@ -20,131 +16,6 @@ const reducers = {
     };
   }
 };
-
-function Controls ({DOM}) {
-  function view ([systemDOM, rulesDOM, characters]) {
-    return (
-      div('.controls', [
-        systemDOM,
-        rulesDOM
-      ])
-    );
-  }
-
-  const system = isolate(System)({DOM});
-  const rules = isolate(Rules)({DOM, characters$: system.characters$});
-
-  return {
-    DOM: xs.combine(system.DOM, rules.DOM, system.characters$).map(view)
-  };
-}
-
-function System ({DOM}) {
-  function view (system) {
-    return (
-      div([
-        label('System'),
-        input('.system', {attrs: {value: system}})
-      ])
-    );
-  }
-
-  const system$ = DOM
-    .select('.system')
-    .events('input')
-    .map(ev => ev.target.value)
-    .startWith('');
-
-  const characters$ = system$.map(uniq);
-
-  return {
-    DOM: system$.map(view),
-
-    characters$
-  };
-}
-
-function Rules ({DOM, characters$}) {
-  function view (rulesDOM) {
-    return (
-      div('.rules', rulesDOM)
-    );
-  }
-
-  function diffArrays (a, b) {
-    return difference(b, a); // required for folding
-  }
-
-  const initialNewCharacterState = {previous: [], diff: []};
-
-  const diffCharacters = (acc, current) => ({
-    diff: diffArrays(acc.previous, current),
-    previous: current
-  });
-
-  const ruleCharactersProxy$ = xs.create();
-
-  const newCharacter$ = xs.merge(characters$, ruleCharactersProxy$)
-    .fold(diffCharacters, initialNewCharacterState)
-    .map(state => xs.fromArray(state.diff))
-    .flatten();
-
-  const newRule$ = newCharacter$.map(character => ({character$: xs.of(character)}));
-
-  const rules$ = Collection(
-    Rule,
-    {DOM},
-    newRule$,
-    rule => rule.remove$
-  );
-
-  const rulesDOM$ = Collection.pluck(
-    rules$,
-    rule => rule.DOM
-  );
-
-  const ruleCharacters$ = Collection.pluck(
-    rules$,
-    rule => rule.characters$
-  ).map(flatten);
-
-  ruleCharactersProxy$.imitate(ruleCharacters$);
-
-  return {
-    DOM: rulesDOM$.map(view)
-  };
-}
-
-function Rule ({DOM, character$}) {
-  function view (character) {
-    return (
-      div('.rule', [
-        label(`${character} -> `),
-        input('.rule-input', {attrs: {value: character}}), // TODO - make this transformation
-        button('.remove', 'x') // TODO - use unicode times value
-      ])
-    );
-  }
-
-  const remove$ = DOM
-    .select('.remove')
-    .events('click');
-
-  const rule$ = DOM
-    .select('.rule-input')
-    .events('input')
-    .map(ev => ev.target.value);
-
-  const characters$ = xs.merge(rule$, character$).map(uniq);
-
-  return {
-    DOM: character$.map(view),
-
-    remove$,
-
-    characters$ // TODO - rename transformation characters or some shit
-  };
-}
 
 function App ({DOM, Location}) {
   const initialState = {
