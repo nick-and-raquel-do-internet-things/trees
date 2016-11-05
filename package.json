@@ -29,8 +29,10 @@
   "dependencies": {
     "@cycle/collection": "^0.4.0",
     "@cycle/dom": "^13.0.0",
+    "@cycle/isolate": "^1.4.0",
     "@cycle/xstream-run": "^3.1.0",
-    "cycle-svg-pan-and-zoom": "^0.1.1",
+    "cycle-svg-pan-and-zoom": "^0.1.2",
+    "lodash": "^4.16.6",
     "urlencode": "^1.1.0",
     "xstream": "^7.0.0"
   },
