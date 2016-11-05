@@ -1,7 +1,6 @@
 import {h, div, pre, button} from '@cycle/dom';
 import xs from 'xstream';
 import SvgPanAndZoom from 'cycle-svg-pan-and-zoom';
-import urlEncode from 'urlencode';
 
 const lSystem = require('./l-system');
 import Vector from './vector';
@@ -57,16 +56,15 @@ function App ({DOM, Location}) {
   const svg = SvgPanAndZoom({DOM, children$, attrs$: xs.of({'width': innerWidth, 'height': innerHeight})});
 
   const stateForUrl$ = xs.combine(state$, instructions.stateArray$)
-    .map(([state, instructionsState]) => ({state, instructionsState}))
-    .map(state => urlEncode(JSON.stringify(state)));
+    .map(([state, instructionsState]) => ({state, instructionsState}));
 
   return {
-    DOM: xs.combine(state$, instructions.DOM, svg.DOM, Location).map(view),
+    DOM: xs.combine(state$, instructions.DOM, svg.DOM).map(view),
     Location: stateForUrl$
   };
 }
 
-function view ([state, instructionsDOM, svg, location]) {
+function view ([state, instructionsDOM, svg]) {
   return div([
     instructionsDOM,
 
