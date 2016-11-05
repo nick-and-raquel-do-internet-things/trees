@@ -68,14 +68,13 @@ function App ({DOM, Location}) {
 
 function view ([state, instructionsDOM, svg, location]) {
   return div([
-    debug(location),
-    button('.go', 'GO!'),
-
     instructionsDOM,
 
-    debug(state),
+    button('.go', 'GO!'),
 
-    svg
+    svg,
+
+    debug(state)
   ]);
 }
 
@@ -158,6 +157,10 @@ const turtleReducers = {
 
   LOAD (turtleState) {
     const poppedPosition = turtleState.positions[turtleState.positions.length - 1];
+
+    if (!poppedPosition) {
+      return turtleState;
+    }
 
     return {
       ...turtleState,
