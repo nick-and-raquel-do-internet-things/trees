@@ -1,7 +1,6 @@
 import {div} from '@cycle/dom';
 import isolate from '@cycle/isolate';
 import xs from 'xstream';
-import delay from 'xstream/extra/delay';
 
 import Rules from './rules';
 import System from './system';
@@ -20,14 +19,7 @@ function Controls ({DOM, props$}) {
 
   const system = System({DOM, props$: props$.map(props => props.axiom)});
 
-  const magic$ = xs.merge(
-    xs.of(true).compose(delay(100)),
-    xs.of(false)
-  ).debug('magic');
-
-  const filteredCharacters$ = magic$.map(filtered => system.characters$.filter(() => filtered)).flatten();
-
-  const rules = Rules({DOM, characters$: filteredCharacters$.debug('characters'), props$: props$.map(props => props.rules).debug('props')});
+  const rules = Rules({DOM, props$: props$.map(props => props.rules)});
 
   const state$ = xs.combine(system.axiom$, rules.rules$)
     .map(([axiom, rules]) => ({axiom, rules}));
@@ -40,9 +32,7 @@ function Controls ({DOM, props$}) {
 
     state$,
 
-    stateForLocation$,
-
-    newCharacter$: rules.newCharacter$
+    stateForLocation$
   };
 }
 

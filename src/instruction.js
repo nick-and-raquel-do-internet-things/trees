@@ -4,6 +4,7 @@ import InstructionPart from './instruction-part';
 import xs from 'xstream';
 
 function Instruction ({DOM, character, instructions}) {
+  // TODO - STREAMS AS ARGUMENTS
   // TODO - better name than instructions, they're really parts
 
   function view ([character, instructionsDOM]) {
@@ -35,8 +36,7 @@ function Instruction ({DOM, character, instructions}) {
     .map(ev => ev.target.value)
     .startWith(character);
 
-  const instructionPartFromProps$ = xs.fromArray(instructions)
-    .debug('instructionPartFromProps$');
+  const instructionPartFromProps$ = xs.fromArray(instructions);
 
   const newInstructionPart$ = xs.merge(
     add$,

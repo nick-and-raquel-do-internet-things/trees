@@ -1,15 +1,13 @@
 import {span, div, button, input} from '@cycle/dom';
-import isolate from '@cycle/isolate';
 import xs from 'xstream';
-import uniq from 'lodash/uniq';
 
-function Rule ({DOM, character$}) {
-  function view (character) {
+function Rule ({DOM, props$}) {
+  function view ([character, transformation]) {
     return (
       div('.rule', [
         input('.transformation-character', {attrs: {value: character}}),
         span('  ->  '),
-        input('.transformation-input', {attrs: {value: character}}),
+        input('.transformation-input', {attrs: {value: transformation}}),
         button('.remove', 'x') // TODO - use unicode times value
       ])
     );
@@ -19,30 +17,37 @@ function Rule ({DOM, character$}) {
     .select('.remove')
     .events('click');
 
-  const rule$ = DOM
-    .select('.transformation-input')
-    .events('input')
-    .map(ev => ev.target.value);
+  const characterFromProps$ = props$.map(props => props.character);
+  const transformationFromProps$ = props$.map(props => props.transformation);
 
-  const transformationCharacter$ = DOM
+  const characterChange$ = DOM
     .select('.transformation-character')
     .events('input')
     .map(ev => ev.target.value);
 
-  const transformation$ = xs.merge(rule$, character$).remember();
+  const transformationChange$ = DOM
+    .select('.transformation-input')
+    .events('input')
+    .map(ev => ev.target.value);
 
-  const transformationUniqueCharacters$ = transformation$.map(uniq);
+  const character$ = xs.merge(
+    characterFromProps$,
+    characterChange$
+  ).remember();
+
+  const transformation$ = xs.merge(
+    transformationFromProps$,
+    transformationChange$
+  ).remember();
 
   return {
-    DOM: character$.map(view),
+    DOM: xs.combine(character$, transformation$).map(view),
 
-    transformationCharacter$: xs.merge(transformationCharacter$, character$).remember(),
+    character$,
 
     transformation$,
 
-    remove$,
-
-    transformationUniqueCharacters$
+    remove$
   };
 }
 

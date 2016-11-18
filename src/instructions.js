@@ -4,7 +4,7 @@ import Collection from '@cycle/collection';
 
 import Instruction from './instruction';
 
-function Instructions ({DOM, props$, newCharacter$}) {
+function Instructions ({DOM, props$}) {
   function view (instructionsDOM) {
     return (
       div([
@@ -22,12 +22,9 @@ function Instructions ({DOM, props$, newCharacter$}) {
     .map(props => xs.fromArray(props))
     .flatten();
 
-  const newInstructionFromControls$ = newCharacter$.map(character => ({character}));
-
   const newInstruction$ = xs.merge(
     add$,
-    instructionsFromProps$,
-    newInstructionFromControls$
+    instructionsFromProps$
   );
 
   const instructions$ = Collection(

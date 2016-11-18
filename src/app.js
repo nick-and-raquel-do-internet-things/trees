@@ -196,7 +196,7 @@ function turtleItUp (instructionsState, turtleState, character, index, character
   const instructions = instructionsState[character];
 
   if (!instructions || instructions.length === 0) {
-    console.log(`no instruction found for "${character}"`);
+    // console.log(`no instruction found for "${character}"`);
     return turtleState;
   }
 
@@ -236,7 +236,6 @@ function debug (val) {
 }
 
 export default App;
-
 
 // we want to store the axiom and the rules in the location state
 // so that when we reload the page, the axiom and rules remain
