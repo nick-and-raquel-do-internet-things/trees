@@ -20,7 +20,7 @@ function Instructions ({DOM, props$}) {
 
   const instructionsFromProps$ = props$
     .map(props => xs.fromArray(props))
-    .flatten()
+    .flatten();
 
   const newInstruction$ = xs.merge(
     add$,

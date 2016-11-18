@@ -5,6 +5,7 @@ import SvgPanAndZoom from 'cycle-svg-pan-and-zoom';
 const lSystem = require('./l-system');
 import Vector from './vector';
 import Instructions from './instructions';
+import Controls from './controls';
 
 const reducers = {
   GO (state, payload) {
@@ -13,26 +14,46 @@ const reducers = {
 
       system: lSystem(state.system, state.rules)
     };
+  },
+
+  UPDATE_STATE_FROM_CONTROLS (state, payload) {
+    return {
+      ...state,
+
+      system: payload.axiom,
+      axiom: payload.axiom,
+
+      rules: payload.rules
+    };
   }
 };
 
 function App ({DOM, Location}) {
   const initialState = {
-    system: '0',
+    system: '',
+    axiom: '',
 
     rules: {
-      '1': '11',
-      '0': '1[0]0'
     }
   };
+
+  const controlsProps$ = Location.map(location => location.controlsState);
+
+  const controls = Controls({DOM, props$: controlsProps$});
 
   const goAction$ = DOM
     .select('.go')
     .events('click')
     .mapTo({type: 'GO'});
 
+  const updateStateFromControls$ = controls
+    .state$
+    .map(state => ({type: 'UPDATE_STATE_FROM_CONTROLS', payload: state}));
+
   const action$ = xs.merge(
-    goAction$
+    goAction$,
+
+    updateStateFromControls$
   );
 
   const state$ = action$.fold((state, action) => {
@@ -47,7 +68,7 @@ function App ({DOM, Location}) {
 
   const instructionsProps$ = Location.map(location => location.instructionsState);
 
-  const instructions = Instructions({DOM, props$: instructionsProps$});
+  const instructions = Instructions({DOM, props$: instructionsProps$, newCharacter$: controls.newCharacter$});
 
   const allTheState$ = xs.combine(state$, instructions.state$);
 
@@ -55,24 +76,24 @@ function App ({DOM, Location}) {
 
   const svg = SvgPanAndZoom({DOM, children$, attrs$: xs.of({'width': innerWidth, 'height': innerHeight})});
 
-  const stateForUrl$ = xs.combine(state$, instructions.stateArray$)
-    .map(([state, instructionsState]) => ({state, instructionsState}));
+  const stateForUrl$ = xs.combine(controls.stateForLocation$, instructions.stateArray$)
+    .map(([controlsState, instructionsState]) => ({controlsState, instructionsState}));
 
   return {
-    DOM: xs.combine(state$, instructions.DOM, svg.DOM).map(view),
+    DOM: xs.combine(state$, instructions.DOM, svg.DOM, controls.DOM).map(view),
+
     Location: stateForUrl$
   };
 }
 
-function view ([state, instructionsDOM, svg]) {
+function view ([state, instructionsDOM, svg, controlsDOM]) {
   return div([
+    controlsDOM,
     instructionsDOM,
 
     button('.go', 'GO!'),
 
-    svg,
-
-    debug(state)
+    svg
   ]);
 }
 
@@ -175,7 +196,7 @@ function turtleItUp (instructionsState, turtleState, character, index, character
   const instructions = instructionsState[character];
 
   if (!instructions || instructions.length === 0) {
-    console.log(`no instruction found for "${character}"`);
+    // console.log(`no instruction found for "${character}"`);
     return turtleState;
   }
 
@@ -215,3 +236,6 @@ function debug (val) {
 }
 
 export default App;
+
+// we want to store the axiom and the rules in the location state
+// so that when we reload the page, the axiom and rules remain
